@@ -1,4 +1,5 @@
 -- Copyright (c) 2015  Phil Leblanc  -- see LICENSE file
+-- Modifications (c) 2025 hemirt, All Rights Reserved -- see LICENSE file
 ------------------------------------------------------------
 --[[
 
@@ -18,6 +19,15 @@ and MAC primitives.
 
 local chacha20 = require "plc.chacha20"
 local poly1305 = require "plc.poly1305"
+local base64 = require "plc.base64"
+
+local function random_bytes(n)
+    local s = {}
+    for i = 1, n do
+        s[i] = string.char(math.random(0, 255))
+    end
+    return table.concat(s)
+end
 
 ------------------------------------------------------------
 -- poly1305 key generation
@@ -37,16 +47,13 @@ end
 
 local app = table.insert
 
-local encrypt = function(aad, key, iv, constant, plain)
+local encrypt = function(aad, key, plain)
 	-- aad: additional authenticated data - arbitrary length
 	-- key: 32-byte string
-	-- iv, constant: concatenated to form the nonce (12 bytes)
-	--   (why not one 12-byte param? --maybe because IPsec uses
-	--   an 8-byte nonce)
 	-- implementation: RFC 7539 sect 2.8.1
 	-- (memory inefficient - encr text is copied in mac_data)
 	local mt = {} -- mac_data table
-	local nonce = constant .. iv
+	local nonce = random_bytes(12)
 	local otk = poly_keygen(key, nonce)
 	local encr = chacha20.encrypt(key, 1, nonce, plain)
 	app(mt, aad)
@@ -61,14 +68,22 @@ local encrypt = function(aad, key, iv, constant, plain)
 	local mac_data = table.concat(mt)
 --~ 	p16('mac', mac_data)
 	local tag = poly1305.auth(mac_data, otk)
-	return encr, tag
+	return {
+		aad = base64.encode(aad),
+		nonce = base64.encode(nonce),
+		ciphertext = base64.encode(encr),
+		tag = base64.encode(tag)
+	}
 end --chacha20_aead_encrypt()
 
-local function decrypt(aad, key, iv, constant, encr, tag)
+local function decrypt(key, packet)
 	-- (memory inefficient - encr text is copied in mac_data)
 	-- (structure similar to aead_encrypt => what could be factored?)
 	local mt = {} -- mac_data table
-	local nonce = constant .. iv
+	local aad = base64.decode(packet.aad)
+	local nonce = base64.decode(packet.nonce)
+	local tag = base64.decode(packet.tag)
+	local encr = base64.decode(packet.ciphertext)
 	local otk = poly_keygen(key, nonce)
 	app(mt, aad)
 	app(mt, pad16(aad))
