@@ -95,7 +95,7 @@ local function decrypt(key, packet)
 	local mac = poly1305.auth(mac_data, otk)
 	if mac == tag then
 		local plain = chacha20.encrypt(key, 1, nonce, encr)
-		return plain
+		return plain, ""
 	else
 		return nil, "auth failed"
 	end
