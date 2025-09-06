@@ -248,7 +248,7 @@ end)
 
 c2.register_command("/send", function(ctx)
     local channel = channels[ctx.channel:get_name()]
-    if (channel.ws == nil) then
+    if (channel == nil or channel.ws == nil) then
         return
     end
     
