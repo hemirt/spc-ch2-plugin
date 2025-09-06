@@ -25,13 +25,62 @@ function on_open(channel)
     end
 end
 
+function connect(channel)
+    if channel.try_connect == false then
+        return
+    end
+    local chn = c2.Channel.by_name(channel.local_chatterino_split)
+    if chn == nil then
+        return
+    end
+    chn:add_system_message("Connecting to remote room: " .. channel.remote_server_room)
+    local headers = {Authorization = config.server_password, room = channel.remote_server_room}
+    channel.ws = c2.WebSocket.new(config.server_url, {headers = headers, on_open = make_on_open(channel), on_close = make_on_close(channel), on_text = make_on_text(channel) })
+end
+
+function disconnect(channel)
+    channel.ping_in_flight = false
+    if channel.ws == nil then
+        return
+    end
+    local chn = c2.Channel.by_name(channel.local_chatterino_split)
+    if chn then
+        chn:add_system_message("Disconnecting from remote room: " .. channel.remote_server_room)
+    end
+    channel.ws:close()
+    channel.ws = nil
+end
+
+function reconnect(channel)
+    if channel.try_connect == false then
+        return
+    end
+
+    local chn = c2.Channel.by_name(channel.local_chatterino_split)
+    if chn then
+        chn:add_system_message("Reconnecting to remote server room: " .. channel.remote_server_room)
+    end
+
+    if channel.ws ~= nil then
+        channel.ping_in_flight = false
+        channel.ws:close()
+        channel.ws = nil
+    end
+    connect(channel)
+end
+
+function make_try_reconnect(channel)
+    return function()
+        reconnect(channel)
+    end
+end
+
 function on_close(channel)
     local chn = c2.Channel.by_name(channel.local_chatterino_split)
     if chn then
         chn:add_system_message("Disconnected from remote room: " .. channel.remote_server_room)
-        c2.later(function()
-            reconnect(channel)
-        end, 3000) 
+        local try_reconnect = make_try_reconnect(channel)
+        c2.later(try_reconnect, 3000) 
     end
 end
 
@@ -135,50 +184,6 @@ function make_on_text(channel)
     return function(data)
         on_text(channel, data)
     end
-end
-
-function connect(channel)
-    if channel.try_connect == false then
-        return
-    end
-    local chn = c2.Channel.by_name(channel.local_chatterino_split)
-    if chn == nil then
-        return
-    end
-    chn:add_system_message("Connecting to remote room: " .. channel.remote_server_room)
-    local headers = {Authorization = config.server_password, room = channel.remote_server_room}
-    channel.ws = c2.WebSocket.new(config.server_url, {headers = headers, on_open = make_on_open(channel), on_close = make_on_close(channel), on_text = make_on_text(channel) })
-end
-
-function disconnect(channel)
-    channel.ping_in_flight = false
-    if channel.ws == nil then
-        return
-    end
-    local chn = c2.Channel.by_name(channel.local_chatterino_split)
-    if chn then
-        chn:add_system_message("Disconnecting from remote room: " .. channel.remote_server_room)
-    end
-    channel.ws:close()
-    channel.ws = nil
-end
-
-function reconnect(channel)
-    if v.try_connect == false then
-        return
-    end
-
-    local chn = c2.Channel.by_name(channel.local_chatterino_split)
-    if chn then
-        chn:add_system_message("Reconnecting to remote server room: " .. channel.remote_server_room)
-    end
-
-    if channel.ws ~= nil then
-        channel.ping_in_flight = false
-        channel.ws:close()
-        channel.ws = nil
-    end
-    connect(channel)
 end
 
 function send_ping(channel)
