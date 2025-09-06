@@ -1,11 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/Chatterino/chatterino2/master/docs/plugin-info.schema.json",
-  "name": "Test plugin",
-  "description": "This plugin is for testing stuff.",
+  "name": "SPC - Secret Private Chat",
+  "description": "An end to end encrypted secret private group chat",
   "authors": ["hemirt"],
   "homepage": "https://hemirt.com",
-  "tags": ["test"],
+  "tags": ["spc", "e2ee", "encrypted", "private", "group chat", "secret"],
   "version": "0.0.0",
-  "license": "All Rights Reserved",
+  "license": "All Rights Reserved, NO WARRANTY, see LICENSE.md",
   "permissions": [{"type": "Network"}, {"type": "FilesystemWrite"}, {"type": "FilesystemRead"}]
 }
