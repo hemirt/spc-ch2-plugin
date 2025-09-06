@@ -1,12 +1,12 @@
 {
     "server_url": "wss://spc.hemirt.com",
-    "server_password": "EXAMPLE",
-    "user_name": "USERNAME",
+    "server_password": "SERVER_PASSWORD",
+    "user_name": "USER_NAME",
     "channels": [
         {
             "local_chatterino_split": "/spc",
             "remote_server_room": "spc1",
-            "secret_key": "EXAMPLE"
+            "secret_key": "ROOM_SECRET_KEY"
         }
     ], 
     "timezone": 2,
